@@ -9,7 +9,7 @@ $ gcc -c xxx.c yyy.c
 ```
 Then observe the object file before link
 ```shell=x
-$ objdump xxx.o
+$ objdump -S xxx.o
 ```
 ![](https://i.imgur.com/w2JPDv7.png)
 There is the uncomplished portion to call the function not defeind in its own C file, instead in the another file.
@@ -40,7 +40,7 @@ $ ld -T mysc.ld xxx.o yyy.o
 The above command will make a.out file
 #### The out file after linking
 ```shell=x
-$ objdump a.out
+$ objdump -S a.out
 ```
 The callee function could be found at the practice address 0x3000, which we defined it's VMA in the .ld file.
 ![](https://i.imgur.com/hxb61Rz.png)
