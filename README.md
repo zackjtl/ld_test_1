@@ -45,5 +45,5 @@ $ objdump -S a.out
 The callee function could be found at the practice address 0x3000, which we defined it's VMA in the .ld file.
 <img src="https://i.imgur.com/hxb61Rz.png" alt="drawing" width="70%"/>
 
-These are what linker work for us. Which combines section in the input object files, redirect inter-files symbols and sometimes, might add so-called 'ELF Header' if the target is an executable file for particular platform.
+These are what linker work for us. Which combines section in the input object files, redirect inter-file symbols and sometimes, might add so-called 'ELF Header' if the target is an executable file for particular platform.
 
