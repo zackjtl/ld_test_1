@@ -1,6 +1,6 @@
 # The Linker Script
 
-### Basic work of a linker
+### I. Basic work of a linker
 Say we have two C file, the first (xxx.c) with the main function and the another (yyy.c) have the function sub() called by the first file.
 
 First, compile the two files
