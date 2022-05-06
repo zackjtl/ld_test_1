@@ -11,10 +11,10 @@ Then observe the object file before link
 ```shell=x
 $ objdump -S xxx.o
 ```
-![](https://i.imgur.com/w2JPDv7.png)
+<img src="https://i.imgur.com/w2JPDv7.png" alt="drawing" width="70%"/>
 There is the uncomplished portion to call the function not defeind in its own C file, instead in the another file.
 
-With the linker script, we arrange the sections placement, assign VMA
+With the linker script, we arrange the sections placement and assign VMA..
 ```shell=
 # mysc.ld
 SECTIONS
@@ -43,7 +43,7 @@ The above command will make a.out file
 $ objdump -S a.out
 ```
 The callee function could be found at the practice address 0x3000, which we defined it's VMA in the .ld file.
-![](https://i.imgur.com/hxb61Rz.png)
+<img src="https://i.imgur.com/hxb61Rz.png" alt="drawing" width="70%"/>
 
 These are what linker work for us. Which combines section in the input object files, redirect inter-files symbols and sometimes, might add so-called 'ELF Header' if the target is an executable file for particular platform.
 
