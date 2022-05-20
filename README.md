@@ -71,3 +71,4 @@ $ objdump -t a.out
 As the result shown, we see the .data section is arranged at the address 0x8000, that match the requirement we descripted in linker script. Then .bss section is arranged from start address 0x8004, it's next to .data section, that's great, linker helps us make arrangements as compact as possible.
 
 ## III. VMA & LMA
+To be continued..
