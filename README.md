@@ -165,16 +165,91 @@ $ hexdump a.bin
 ```
 可以看到變數g_var_data (0x111111F8)被放置在0x14000的位址，這是因為linker和objcopy都會刪去前面0x2000以前沒定義的空白部分。這裡可以看到輸出檔案的大小幾乎就是和VMA一模一樣。
 
-這邊做個假設，假如我們希望.text1, .text2和.data在儲存位置中的擺放是趨於緊湊的，像是這樣：
+這邊做個假設，假如我們希望.text1, .text2和.data在儲存位置中的擺放是趨於緊湊的，每個區段間都只間隔0x100，像是這樣：
 
 | .text1 | .text2 | .data |
 | -------- | -------- | -------- |
-| 0x2000     | 0x3000     | 0x4000     |
+| 0x20000     | 0x20100     | 0x20300     |
 
-只是當要執行時，boot loader會把.data區搬到較遠的0x16000記憶體中，那麼我們怎麼做？
+只是當要執行時，boot loader會把.data區搬到較遠的0x2000, 0x3000和0x16000記憶體中，那麼我們怎麼做？
 
 一個是載入這些code的載入器 (可能是一段code，或是一個硬體function)有能力將這些片段從很大的檔案中切割出來，擺放到儲存記憶體中(可能是Flash或ROM)。但假如載入器沒有這個能力 (只能整塊binary file複製過去)，那麼我們需要藉助LMA的幫助，使程式碼的布局符合我們儲存記憶體的配置。因此，基於上述需求的linker script就可以寫成：
+```shell=
+SECTIONS
+{
+	.text1 0x2000: AT(0x20000)
+	{ 
+		xxx.o(.text)
+	}
+	.text2 0x3000: AT(0x20100)
+	{ 
+		yyy.o(.text)	
+	}
+	.data 0x16000: AT(0x20300)
+	{ 
+		xxx.o(.data) 
+		yyy.o(.data)
+	}
+}
+```
+我們可以發現如此產生的binary檔非常的小：
+```
+$ ls -l
+total 76
+-rw-r--r-- 1 Administrator None   772 五月 24 15:20 a.bin
+...
+...
+```
+而程式片段也是按照我們的需求擺放：
+```
+$ hexdump a.bin
+0000000 ff3b bcfc f4ef 0246 2222 0050 f402 0e3c
+0000010 0100 1c3c 0000 0c3c 0100 0188 81f0 01f0
+0000020 0049 f007 81f0 01f0 0cec ff3b 84fc 9edd
+0000030 0000 0000 0000 0000 0000 0000 0000 0000
+*
+0000100 f8ef 81f0 01f0 018e 08ec 9edd 0000 0000
+0000110 0000 0000 0000 0000 0000 0000 0000 0000
+*
+0000300 1111 f811
+0000304
+```
+## Export Symbol
+上面提到當程式和資料需要從儲存位址(LMA)被複製到執行位址(VMA)，一個方法是使用常數寫法：
+```c=
+char *src = (char*)0x2000;
+char *dst = (char*)0x20000;
+/* ROM has data at end of text; copy it. */
+for (int i = 0; i < 0x100; ++i) {
+    *dst++ = *src++;
+}
+```
+但假如希望程式可以重複使用在不同硬體上，每個硬體的位址定義可能不同，那常數顯然不是個好方法。其實我們可以linker script用變數的傳遞，將LMA或VMA帶進程式中
+```shell=
+SECTIONS
+{
+    ...
+    
+    .data 0x16000: AT(0x20300)
+    { 
+        _text_lma = LOADADDR(.data)
+        _text_vma = .
+        xxx.o(.data) 
+        yyy.o(.data)        
+        _etext_vma = .        
+    }
+    
+    ...
+}
+```
+這段script會將.text的VMA起始位址載入_text_vma, 結束位址載入_etext_vma，而LMA位址載入_text_lma；在C程式碼中這些都會被視為變數，因此你不能重複定義相同的符號。當要從LMA複製.text區塊到VMA時，程式碼如下：
 
-
-
-
+```c=
+extern int _text_lma, _text_vma, _etext_vma;
+char *src = (char*)_text_lma;
+char *dst = (char*)_text_vma;
+/* ROM has data at end of text; copy it. */
+while (dst < _etext_vma) {
+    *dst++ = *src++;
+}
+```
