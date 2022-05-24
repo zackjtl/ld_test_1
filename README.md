@@ -4,7 +4,7 @@
 Say we have two C file, the first (xxx.c) with the main function and the another (yyy.c) have the function sub() called by the first file.
 
 xxx.c
-```c=
+```C
 extern int sub(int input);
 
 static int g_var_bss;
@@ -20,7 +20,7 @@ int main()
 }
 ```
 yyy.c:
-```c=
+```C
 int sub(int input)
 {
 	return input-1;
@@ -29,13 +29,13 @@ int sub(int input)
 
 
 First, compile the two files
-```shell=x
+```
 $ gcc -c xxx.c yyy.c
 $ ld xxx.o yyy.o
 ```
 
 Then observe the disassembly file before link
-```shell=x
+```
 $ objdump -S xxx.o
 ```
 <img src="https://i.imgur.com/y7wkebx.png" alt="drawing" width="80%"/>
@@ -50,7 +50,7 @@ After linking, we get the result that the sections are combined in one file, and
 ## II. The basic of linker scripts
 
 With a basci linker script, we arrange the sections placement and assign the code address (called VMA, Virtual Memeory Address), 
-```shell=
+```
 # test.ld
 SECTIONS
 {
@@ -70,7 +70,7 @@ SECTIONS
 }
 ```
 When linking, we select the above script file by -T argument
-```shell=x
+```
 $ ld -T test.ld xxx.o yyy.o
 ```
 Then we can observe where the code is located as well as the case in, we found that the function sub() is placed in address 0x3000.
@@ -174,7 +174,7 @@ $ hexdump a.bin
 只是當要執行時，boot loader會把.data區搬到較遠的0x2000, 0x3000和0x16000記憶體中，那麼我們怎麼做？
 
 一個是載入這些code的載入器 (可能是一段code，或是一個硬體function)有能力將這些片段從很大的檔案中切割出來，擺放到儲存記憶體中(可能是Flash或ROM)。但假如載入器沒有這個能力 (只能整塊binary file複製過去)，那麼我們需要藉助LMA的幫助，使程式碼的布局符合我們儲存記憶體的配置。因此，基於上述需求的linker script就可以寫成：
-```shell=
+```shell
 SECTIONS
 {
 	.text1 0x2000: AT(0x20000)
@@ -216,7 +216,7 @@ $ hexdump a.bin
 ```
 ## Export Symbol
 上面提到當程式和資料需要從儲存位址(LMA)被複製到執行位址(VMA)，一個方法是使用常數寫法：
-```c=
+```C
 char *src = (char*)0x2000;
 char *dst = (char*)0x20000;
 /* ROM has data at end of text; copy it. */
@@ -225,7 +225,7 @@ for (int i = 0; i < 0x100; ++i) {
 }
 ```
 但假如希望程式可以重複使用在不同硬體上，每個硬體的位址定義可能不同，那常數顯然不是個好方法。其實我們可以linker script用變數的傳遞，將LMA或VMA帶進程式中
-```shell=
+```shell
 SECTIONS
 {
     ...
@@ -244,7 +244,7 @@ SECTIONS
 ```
 這段script會將.text的VMA起始位址載入_text_vma, 結束位址載入_etext_vma，而LMA位址載入_text_lma；在C程式碼中這些都會被視為變數，因此你不能重複定義相同的符號。當要從LMA複製.text區塊到VMA時，程式碼如下：
 
-```c=
+```c
 extern int _text_lma, _text_vma, _etext_vma;
 char *src = (char*)_text_lma;
 char *dst = (char*)_text_vma;
